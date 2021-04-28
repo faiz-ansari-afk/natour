@@ -4,7 +4,8 @@ const tourSchema =new mongoose.Schema({
     name:{
       type:String,
       required:[true,"A tour must have a name"],
-      unique:true
+      unique:true,
+      trim:true
     },
     duration:{
       type:Number,
@@ -31,11 +32,29 @@ const tourSchema =new mongoose.Schema({
       type:Number,
       required:[true,"A tour must have a price"]
     },
-    priceDiscount:Number,
+    priceDiscount:{ 
+      type:Number
+    },
     summary:{
       type:String,
+      trim: true,
+      required:true
+    },
+    description:{
+      type:String,
       trim: true
-    }
+    },
+    imageCover:{
+      type:String,
+      required:[true,"A tour must have a Cover image"]
+    },
+    images:[String],
+    createdAt:{
+      type:Date,
+      default: Date.now()
+    },
+    startDates:[Date],
+    
 
 
 
