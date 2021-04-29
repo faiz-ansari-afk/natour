@@ -1,53 +1,23 @@
 const express = require('express');
 const fs = require('fs');
 const { Tour } = require('../models/tourModel');
+const APIFeatures = require('../utils/apifeatures')
+
+exports.aliasTopTours = (req, res, next) => {
+  req.query.limit = '5';
+  req.query.sort = '-ratingsAverage';
+  req.query.fields = 'name,price,duration';
+  next();
+};
 
 exports.getAllTours = async (req, res) => {
   try {
-    // shallow copy || hard copy trick.... three dots mean we basically take all the  fields out of the object
-    // with curly braces we make object of it
-    // 1] Filtering
-    const queryObj = { ...req.query };
-    const excludedFields = ['page', 'sort', 'limit', 'fields'];
-    excludedFields.forEach((el) => delete queryObj[el]);
-    // 2] Advanced Filtering
-    let queryStr = JSON.stringify(queryObj);
-    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
-    // const tours = await Tour.find(queryObj);.........we cannot use sort or another property if we await the query
-    // using below trick to do all the sorting and other methods on query and then we await the tours
-    let query = Tour.find(JSON.parse(queryStr));
-    // 3] Sorting
-    // query.sort here sort comes from excludedFields array
-    if (req.query.sort) {
-      const sortBy = req.query.sort.split(',').join(' ');
-      // console.log(sortBy)
-      query = query.sort(sortBy);
-    } else {
-      query = query.sort('-createdAt');
-    }
-    // 4] Field Limiting Features
-    // eg: if user want only name,duration and price field only (localhost:8000/api/v1/tours?fields=name,price)
-    if (req.query.fields) {
-      const fields = req.query.fields.split(',').join(' ');
-      query = query.select(fields);
-    } else {
-      query = query.select('-__v');
-    }
-
-// 5] Pagination and Limiting -----------(localhost:8000/api/v1/tours?page=2&limit=10)
-// -------------------------------------------------------page=2&limit=10 means    1 -10 results on page 1 , 11 -20 results on page 2
-    if(req.query.page){
-    const page = req.query.page * 1 || 1;
-    const limit = req.query.limit * 1 || 100;
-    const skip = (page - 1) * limit;
-    query = query.skip(skip).limit(limit);
-    const numTours = await Tour.countDocuments();
-    if(skip >= numTours){
-      throw new Error("This page does not exist");
-    }
-
-    }
-    const tours = await query;
+    const features = new APIFeatures(Tour.find(), req.query)
+      .filter()
+      .sorting()
+      .paginate()
+      .limitFields();
+    const tours = await features.query;
 
     res.status(200).json({
       status: 'Success',
@@ -59,7 +29,7 @@ exports.getAllTours = async (req, res) => {
   } catch (err) {
     res.status(404).json({
       status: 'Fail',
-      message: 'Data not available',
+      message: err,
     });
   }
 };
