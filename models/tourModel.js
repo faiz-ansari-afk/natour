@@ -1,12 +1,17 @@
 const mongoose =require('mongoose');
-const slugify = require('slugify')
+const slugify = require('slugify');
+const validator = require('validator');
 
 const tourSchema =new mongoose.Schema({
     name:{
       type:String,
       required:[true,"A tour must have a name"],
       unique:true,
-      trim:true
+      trim:true,
+      // not working min max
+      maxlength:[40,'A tour name must be short and precise'],
+      minlength:[10,'Not that short and precise'],
+      // validate: [validator.isAlpha,'Tour Name must only contains character']
     },
     slug:String,
     duration:{
@@ -19,12 +24,18 @@ const tourSchema =new mongoose.Schema({
     },
     difficulty:{
       type:String,
-      required:[true,"A tour must have a difficulty"]
+      required:[true,"A tour must have a difficulty"],
+      enum : {
+        values: ['easy', 'medium', 'difficult'],
+        message: 'Difficulty must be easy, medium and difficult'
+      }
     },
 
     ratingsAverage:{
       type:Number,
-      default:4.5
+      default:4.5,
+      min: [1,'Rating must be above 1.0'],
+      max: [5,'Rating must below 5.0'],
     },
     ratingsQuantity:{
       type:Number, 
@@ -35,7 +46,17 @@ const tourSchema =new mongoose.Schema({
       required:[true,"A tour must have a price"]
     },
     priceDiscount:{ 
-      type:Number
+      type:Number,
+      // add custom validator like
+      //only works when creating new document and not on update
+      validate:{
+      validator: function(value){
+        return value < this.price
+      },
+      message: 'Discount price ({VALUE}) should below the regular price' 
+      // ({VALUE}) it will have access to the value.. its mongoose property not js
+
+    }
     },
     summary:{
       type:String,
