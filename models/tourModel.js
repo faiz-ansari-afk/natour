@@ -114,7 +114,7 @@ this.find({secretTour: {$ne:true}})
   tourSchema.pre('aggregate',function(next){
     // unshift to add in the beginning of the array
     this.pipeline().unshift({$match:{secretTour: {$ne:true}}})
-    console.log(this.pipeline())
+    // console.log(this.pipeline())
     next();
   })
 exports.Tour = new mongoose.model("Tour",tourSchema)
