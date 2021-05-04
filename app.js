@@ -12,7 +12,8 @@ const userRouter = require('./routes/userRoutes');
 
 (process.env.NODE_ENV) 
 if(process.env.NODE_ENV === 'development'){
-    app.use(morgan('dev'))
+    app.use(morgan('dev'));
+    
 }
 
 
@@ -29,6 +30,7 @@ app.all('*' , (req,res,next) => {
     // err.status = 'Fail';
     // err.statusCode = 404;
     // next(err);
+    // console.log(x);
     //Sending to the AppError class 
     next(new AppError(`Can't find ${req.originalUrl} on the server`,404))
 });

@@ -1,3 +1,25 @@
+const AppError = require('./../utils/appError');
+
+const handleCastErrorDB = function(err) {
+    const message = `Invalid ${err.path}: ${err.value}` ;
+    return new AppError(message, 400);
+
+}
+const handleDuplicateFieldsDB = function(err){
+  const value = err.errmsg.match(/(["'])(\\?.)*?\1/)[0]
+  console.log(value) 
+  const message = `Duplicate field value: ${err.keyValue.name}, Please try something NEW 😁`;
+  return new AppError(message, 400)
+}
+const handleValidationErrorDB = function(err){
+  const errors = Object.values(err.errors).map(val => {
+    return val.message
+    // console.log(val.message)
+  })
+  const message = `Invalid Input Data, ${errors.join('. ')} `;
+  return new AppError(message, 400)
+}
+
 const sendErrorDev = (err, res) => {
   res.status(err.statusCode).json({
     status: err.status,
@@ -33,6 +55,13 @@ module.exports = (err, req, res, next) => {
   if (process.env.NODE_ENV === 'development') {
     sendErrorDev(err, res);
   } else if (process.env.NODE_ENV === 'production') {
-    sendErrorProd(err, res);
+      //creating hardcopy of err
+      let errorHardCopy = {...err}
+      //Error produce by mongoose which doesnt come under isOperational...... we have to make these error as isOperation===true
+      //below function is to convert wierd mongoose error to isOperational===true(trusted error)
+      if(err.name === 'CastError' ) errorHardCopy = handleCastErrorDB(err);
+      if(errorHardCopy.code === 11000) errorHardCopy = handleDuplicateFieldsDB(err);
+      if(err.name=== 'ValidationError') errorHardCopy = handleValidationErrorDB(err);
+    sendErrorProd(errorHardCopy , res);
   }
 };
