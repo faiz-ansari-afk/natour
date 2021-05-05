@@ -26,6 +26,7 @@ mongoose
     // () => console.log(" Mongoose is connected")
   )
   .then(() => console.log(' Mongoose is connected'));
+  // if any problem connecting to mongoDB then it will got unhandledRejection events down in server.js file
 // } catch (e) {
 //   console.log("could not connect");
 // }

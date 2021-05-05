@@ -1,20 +1,21 @@
-const express = require('express');
-const fs = require('fs');
+const User = require('./../models/userModel');
+const APIFeatures = require('../utils/apifeatures');
+const catchAsync = require('../utils/catchAsyncError');
+const AppError = require('./../utils/appError');
 
 
-const users = JSON.parse(
-    fs.readFileSync(`${__dirname}/../dev-data/data/users.json`)
-  );
-exports.checkID = (req, res, next, val) => {
+exports.getAllUsers = catchAsync(async (req, res, next) => {
+  // const users = await features.query;
+  const users = await User.find({});
 
-  next();
-}
-exports.getAllUsers = (req, res) => {
-    res.status(500).json({
-      status: 'Error',
-      message:"This route is not yet defined"
-    });
-  };
+  res.status(200).json({
+    status: 'Success',
+    results: users.length,
+    data: {
+      users
+    },
+  });
+  })
 exports.createUser = (req, res) => {
     res.status(500).json({
       status: 'Error',
