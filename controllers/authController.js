@@ -1,5 +1,7 @@
+const { promisify } = require('util');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs')
+const bcrypt = require('bcryptjs');
+
 const catchAsync = require('../utils/catchAsyncError');
 const User = require('./../models/userModel');
 const AppError = require('./../utils/appError');
@@ -42,4 +44,35 @@ exports.login =catchAsync(async (req, res, next) => {
         status:'Success',
         token
     })
+});
+
+// to show authenticated tours for loggedin user
+exports.protect = catchAsync(async (req, res, next) => {
+    //1] Getting token and check if its exists
+    // general way of sending headers is=>   Authorization: Bearer hjgefgawoigbgqgigvoiuruir
+    let token;
+    if(req.headers.authorization && req.headers.authorization.startsWith('Bearer')){
+        //value declared within scope stays within scope
+        token = req.headers.authorization.split(' ')[1];
+    }   
+    if(!token){
+        return next(new AppError('You are not logged in. Please login to get access',401))
+    }
+    //2] Validate token (Super Important step) --verification token
+    const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET )
+    // console.log(decoded)
+    //3] Check if user still exists
+    const freshUser = await User.findById(decoded.id);
+    if(!freshUser){
+        return next(new AppError('The user belonging to this token no loger exist'))
+    }
+    //4] Check if user changed password after the jwt was issued
+    //instance method that will be avialbale on documents ...userModel 
+    if (freshUser.changedPasswordAfterJWTToken(decoded.iat)){
+        return next(new AppError('User recently changed password! Please login again',401))
+    };
+
+    // Grant access to protected route
+    req.user = freshUser;//for future...
+    next();
 })
