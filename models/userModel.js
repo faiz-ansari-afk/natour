@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
+const crypto = require('crypto');
 var bcrypt = require('bcryptjs');
 // require('mongoose-type-email');
 
@@ -41,16 +42,19 @@ const userSchema =  new mongoose.Schema({
             message:'Passwords do not match'
         }
     },
-    passwordChangedAt : Date
+    passwordChangedAt : Date,
+    passwordResetToken: String,
+    passwordResetExpires: Date
 });
 userSchema.pre('save',async function (next){
     //this keyword refer to current documents
     //  Only run this function if password was actually modifies or created
-    if(!this.isModified('password')) return next();
+    if(!this.isModified('password')  || this.isNew) return next();
     //.hash is async function 
     // hash password with cost of 12 
     this.password =await bcrypt.hash(this.password, 12);
     this.passwordConfirm = undefined;
+    this.passwordChangedAt = Date.now() - 1000;// minus one second is because ..jwt tokens are created faster than saving documentin DB
     next();
 
 });
@@ -68,6 +72,13 @@ userSchema.methods.changedPasswordAfterJWTToken = function (JWTTimestamp){
     }
     //False means password not change
     return false
+};
+userSchema.methods.createPasswordResetToken = function(){
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    this.passwordResetToken =  crypto.createHash('sha256').update(resetToken).digest('hex');
+    console.log(resetToken , this.passwordResetToken)
+    this.passwordResetExpires = Date.now() + 10*60*1000;
+    return resetToken;
 }
 const User = mongoose.model('User', userSchema);
 module.exports = User;
